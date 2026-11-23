@@ -1,0 +1,51 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isAdmin() {
+      return isVerified() && (
+        request.auth.token.email == 'sungurbey5151@gmail.com' ||
+        request.auth.token.email == 'goktashacer289@gmail.com'
+      );
+    }
+
+    function isValidApkUpload() {
+      return request.resource != null &&
+        request.resource.size > 0 &&
+        request.resource.size <= 104857600 &&
+        (
+          request.resource.contentType == 'application/vnd.android.package-archive' ||
+          request.resource.contentType == 'application/octet-stream' ||
+          request.resource.contentType == 'application/zip'
+        );
+    }
+
+    // Quarantine bucket for user-submitted APKs pending admin review
+    match /apks/{userId}/{submissionId}/{fileName} {
+      allow read: if isAdmin() || (isVerified() && request.auth.uid == userId);
+      allow create: if isVerified() &&
+        request.auth.uid == userId &&
+        fileName.matches('^.+\\.apk$') &&
+        isValidApkUpload();
+      allow delete: if isAdmin() || (isVerified() && request.auth.uid == userId);
+      allow update: if false;
+    }
+
+    // Approved & SHA-256 verified APKs published to KENIX STORE
+    match /approved-apks/{appId}/{fileName} {
+      allow read: if true;
+      allow write: if isAdmin() && fileName.matches('^.+\\.apk$') && isValidApkUpload();
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,0 +1,426 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Safety Net (Default Deny)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Primitive Helpers ---
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isOwner(userId) {
+      return isVerified() && request.auth.uid == userId;
+    }
+
+    function isBootstrappedAdmin() {
+      return isVerified() && (
+        request.auth.token.email == 'sungurbey5151@gmail.com' ||
+        request.auth.token.email == 'goktashacer289@gmail.com'
+      );
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidHttpUrl(url) {
+      return url is string && url.size() >= 8 && url.size() <= 2000 && url.matches('^https?://.+');
+    }
+
+    function isValidApkLocation(url) {
+      return url is string && url.size() >= 8 && url.size() <= 2000 && (
+        url.matches('^https?://.+') ||
+        url.matches('^/api/apk/download/[a-zA-Z0-9_\\-]+$')
+      );
+    }
+
+    function isValidSha256(hash) {
+      return hash is string && hash.size() == 64 && hash.matches('^[a-fA-F0-9]{64}$');
+    }
+
+    function isValidPackageName(pkg) {
+      return pkg is string && pkg.size() >= 3 && pkg.size() <= 160 && pkg.matches('^[a-zA-Z][a-zA-Z0-9_]*(\\.[a-zA-Z0-9_]+)+$');
+    }
+
+    function isAdmin() {
+      return isBootstrappedAdmin() || (
+        isVerified() && exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    // --- Validation Blueprints ---
+    function isValidStoreApp(data) {
+      return data.keys().hasAll([
+        'id', 'title', 'type', 'category', 'developer', 'isOfficialKenix',
+        'shortDescription', 'fullDescription', 'icon', 'banner', 'tags',
+        'likes', 'dislikes', 'downloads', 'opens', 'rating', 'version',
+        'appUrl', 'launchMode', 'isPublished', 'publishedAt', 'updatedAt'
+      ]) &&
+      data.keys().hasOnly([
+        'id', 'title', 'type', 'category', 'developer', 'isOfficialKenix',
+        'shortDescription', 'fullDescription', 'icon', 'logoUrl', 'banner', 'tags',
+        'likes', 'dislikes', 'downloads', 'opens', 'rating', 'version',
+        'appUrl', 'launchMode', 'isPublished', 'updateNotes',
+        'packageName', 'apkId', 'apkUrl', 'apkFileName', 'fileSizeBytes',
+        'apkSha256', 'apkVerified', 'apkScanSummary', 'submittedBy', 'submissionId',
+        'publishedAt', 'updatedAt'
+      ]) &&
+      isValidId(data.id) &&
+      data.title is string && data.title.size() >= 1 && data.title.size() <= 120 &&
+      data.type in ['app', 'game'] &&
+      data.category is string && data.category.size() >= 1 && data.category.size() <= 80 &&
+      data.developer is string && data.developer.size() >= 1 && data.developer.size() <= 100 &&
+      data.isOfficialKenix is bool &&
+      data.shortDescription is string && data.shortDescription.size() <= 300 &&
+      data.fullDescription is string && data.fullDescription.size() <= 4000 &&
+      data.icon is string && data.icon.size() >= 1 && data.icon.size() <= 60 &&
+      (!('logoUrl' in data) || (data.logoUrl is string && data.logoUrl.size() <= 350000)) &&
+      data.banner is string && data.banner.size() <= 450000 &&
+      data.tags is list && data.tags.size() <= 10 &&
+      (data.tags.size() == 0 || (data.tags[0] is string && data.tags[0].size() <= 60)) &&
+      data.likes is int && data.likes >= 0 &&
+      data.dislikes is int && data.dislikes >= 0 &&
+      data.downloads is int && data.downloads >= 0 &&
+      data.opens is int && data.opens >= 0 &&
+      (data.rating is int || data.rating is float) && data.rating >= 0 && data.rating <= 5 &&
+      data.version is string && data.version.size() >= 1 && data.version.size() <= 40 &&
+      isValidApkLocation(data.appUrl) &&
+      data.launchMode in ['link', 'download'] &&
+      data.isPublished is bool &&
+      (!('updateNotes' in data) || (data.updateNotes is string && data.updateNotes.size() <= 1000)) &&
+      (!('packageName' in data) || isValidPackageName(data.packageName)) &&
+      (!('apkId' in data) || isValidId(data.apkId)) &&
+      (!('apkUrl' in data) || isValidApkLocation(data.apkUrl)) &&
+      (!('apkFileName' in data) || (data.apkFileName is string && data.apkFileName.size() <= 200)) &&
+      (!('fileSizeBytes' in data) || (data.fileSizeBytes is int && data.fileSizeBytes > 0 && data.fileSizeBytes <= 104857600)) &&
+      (!('apkSha256' in data) || isValidSha256(data.apkSha256)) &&
+      (!('apkVerified' in data) || data.apkVerified is bool) &&
+      (!('apkScanSummary' in data) || (data.apkScanSummary is string && data.apkScanSummary.size() <= 500)) &&
+      (!('submittedBy' in data) || isValidId(data.submittedBy)) &&
+      (!('submissionId' in data) || isValidId(data.submissionId)) &&
+      data.publishedAt is timestamp &&
+      data.updatedAt is timestamp;
+    }
+
+    function isValidAppSubmission(data, submissionId) {
+      return data.keys().hasAll([
+        'id', 'userId', 'userEmail', 'developer', 'title', 'packageName',
+        'category', 'version', 'shortDescription', 'fullDescription',
+        'icon', 'banner', 'apkId', 'apkUrl', 'apkFileName', 'fileSizeBytes',
+        'apkSha256', 'apkScanPassed', 'apkScanSummary', 'status',
+        'createdAt', 'updatedAt'
+      ]) &&
+      data.keys().hasOnly([
+        'id', 'userId', 'userEmail', 'developer', 'title', 'packageName',
+        'category', 'version', 'shortDescription', 'fullDescription', 'updateNotes',
+        'icon', 'logoUrl', 'banner', 'apkId', 'apkUrl', 'apkFileName', 'fileSizeBytes',
+        'apkSha256', 'apkScanPassed', 'apkScanSummary', 'status',
+        'reviewNotes', 'reviewedBy', 'reviewedAt', 'publishedAppId',
+        'createdAt', 'updatedAt'
+      ]) &&
+      isValidId(data.id) &&
+      data.id == submissionId &&
+      isValidId(data.userId) &&
+      data.userEmail is string && data.userEmail.size() >= 3 && data.userEmail.size() <= 160 &&
+      data.developer is string && data.developer.size() >= 1 && data.developer.size() <= 100 &&
+      data.title is string && data.title.size() >= 1 && data.title.size() <= 120 &&
+      isValidPackageName(data.packageName) &&
+      data.category is string && data.category.size() >= 1 && data.category.size() <= 80 &&
+      data.version is string && data.version.size() >= 1 && data.version.size() <= 40 &&
+      data.shortDescription is string && data.shortDescription.size() >= 1 && data.shortDescription.size() <= 300 &&
+      data.fullDescription is string && data.fullDescription.size() >= 1 && data.fullDescription.size() <= 4000 &&
+      (!('updateNotes' in data) || (data.updateNotes is string && data.updateNotes.size() <= 1000)) &&
+      data.icon is string && data.icon.size() >= 1 && data.icon.size() <= 60 &&
+      (!('logoUrl' in data) || (data.logoUrl is string && data.logoUrl.size() <= 350000)) &&
+      data.banner is string && data.banner.size() <= 450000 &&
+      isValidId(data.apkId) &&
+      isValidApkLocation(data.apkUrl) &&
+      data.apkFileName is string && data.apkFileName.size() >= 5 && data.apkFileName.size() <= 200 &&
+      data.fileSizeBytes is int && data.fileSizeBytes > 0 && data.fileSizeBytes <= 104857600 &&
+      isValidSha256(data.apkSha256) &&
+      data.apkScanPassed == true &&
+      data.apkScanSummary is string && data.apkScanSummary.size() >= 1 && data.apkScanSummary.size() <= 500 &&
+      data.status in ['pending', 'approved', 'rejected'] &&
+      (!('reviewNotes' in data) || (data.reviewNotes is string && data.reviewNotes.size() <= 500)) &&
+      (!('reviewedBy' in data) || (data.reviewedBy is string && data.reviewedBy.size() <= 160)) &&
+      (!('reviewedAt' in data) || data.reviewedAt is timestamp) &&
+      (!('publishedAppId' in data) || isValidId(data.publishedAppId)) &&
+      data.createdAt is timestamp &&
+      data.updatedAt is timestamp;
+    }
+
+    function isValidUserProfile(data, userId) {
+      return data.keys().hasAll([
+        'userId', 'username', 'kcBalance', 'studioPlan', 'favorites', 'createdAt', 'updatedAt'
+      ]) &&
+      data.keys().hasOnly([
+        'userId', 'username', 'kcBalance', 'studioPlan', 'plusExpiry',
+        'favorites', 'lastRewardedAppId', 'createdAt', 'updatedAt'
+      ]) &&
+      isValidId(data.userId) &&
+      data.userId == userId &&
+      data.username is string && data.username.size() >= 1 && data.username.size() <= 80 &&
+      data.kcBalance is int && data.kcBalance >= 0 &&
+      data.studioPlan in ['normal', 'plus'] &&
+      (!('plusExpiry' in data) || data.plusExpiry == null || (data.plusExpiry is string && data.plusExpiry.size() <= 64)) &&
+      data.favorites is list && data.favorites.size() <= 100 &&
+      (data.favorites.size() == 0 || (data.favorites[0] is string && isValidId(data.favorites[0]))) &&
+      (!('lastRewardedAppId' in data) || (data.lastRewardedAppId is string && data.lastRewardedAppId.size() <= 128 && data.lastRewardedAppId.matches('^[a-zA-Z0-9_\\-]*$'))) &&
+      data.createdAt is timestamp &&
+      data.updatedAt is timestamp;
+    }
+
+    function isValidUserTransaction(data, userId, txId) {
+      return data.keys().hasAll([
+        'id', 'userId', 'amount', 'type', 'description', 'balanceAfter', 'createdAt'
+      ]) &&
+      data.keys().hasOnly([
+        'id', 'userId', 'amount', 'type', 'description', 'balanceAfter', 'createdAt'
+      ]) &&
+      isValidId(data.id) &&
+      data.id == txId &&
+      isValidId(data.userId) &&
+      data.userId == userId &&
+      data.amount is int &&
+      data.type in ['daily', 'publish', 'studio_entry', 'membership', 'sponsor_reward', 'sponsor_revoke', 'download_reward'] &&
+      data.description is string && data.description.size() >= 1 && data.description.size() <= 240 &&
+      data.balanceAfter is int && data.balanceAfter >= 0 &&
+      data.createdAt == request.time;
+    }
+
+    function isValidDownloadReward(data, userId, appId) {
+      return data.keys().hasAll(['appId', 'userId', 'rewardAmount', 'verified', 'createdAt']) &&
+        data.keys().hasOnly(['appId', 'userId', 'rewardAmount', 'verified', 'createdAt']) &&
+        isValidId(data.appId) &&
+        data.appId == appId &&
+        isValidId(data.userId) &&
+        data.userId == userId &&
+        data.rewardAmount == 100 &&
+        data.verified == true &&
+        data.createdAt == request.time;
+    }
+
+    function isValidAppVote(data, appId, userId) {
+      return data.keys().hasAll(['appId', 'userId', 'voteType', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['appId', 'userId', 'voteType', 'createdAt', 'updatedAt']) &&
+        isValidId(data.appId) &&
+        data.appId == appId &&
+        isValidId(data.userId) &&
+        data.userId == userId &&
+        data.voteType in ['like', 'dislike'] &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidAdminRecord(data, adminUid) {
+      return data.keys().hasAll(['uid', 'role', 'createdAt']) &&
+        data.keys().hasOnly(['uid', 'role', 'createdAt']) &&
+        isValidId(data.uid) &&
+        data.uid == adminUid &&
+        data.role in ['ceo', 'admin'] &&
+        data.createdAt == request.time;
+    }
+
+    // --- Collection Rules ---
+
+    // Storefront connection test document
+    match /test/connection {
+      allow get: if isVerified();
+    }
+
+    // Admin Allowlist
+    match /admins/{adminUid} {
+      allow get: if isValidId(adminUid) && (isOwner(adminUid) || isAdmin());
+      allow list: if isBootstrappedAdmin();
+      allow create: if isValidId(adminUid) &&
+        isBootstrappedAdmin() &&
+        isValidAdminRecord(incoming(), adminUid);
+      allow update, delete: if false;
+    }
+
+    // Store Applications Catalog
+    match /apps/{appId} {
+      allow get: if isValidId(appId) && (isAdmin() || (resource != null && resource.data.isPublished == true));
+      allow list: if resource.data.isPublished == true || isBootstrappedAdmin();
+
+      allow create: if isValidId(appId) &&
+        isAdmin() &&
+        isValidStoreApp(incoming()) &&
+        incoming().id == appId &&
+        incoming().publishedAt == request.time &&
+        incoming().updatedAt == request.time;
+
+      allow update: if isValidId(appId) &&
+        isValidStoreApp(incoming()) &&
+        incoming().id == existing().id &&
+        incoming().publishedAt == existing().publishedAt && (
+          // Tier 1: CEO / Admin updates app details or publication state
+          (isAdmin() && incoming().updatedAt == request.time) ||
+          // Tier 2a: Verified user increments open or download usage counter by 1
+          (
+            isVerified() &&
+            existing().isPublished == true &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['downloads', 'opens']) &&
+            (
+              (incoming().downloads == existing().downloads + 1 && incoming().opens == existing().opens) ||
+              (incoming().opens == existing().opens + 1 && incoming().downloads == existing().downloads)
+            )
+          ) ||
+          // Tier 2b: Verified user syncs single-step vote count on published app
+          (
+            isVerified() &&
+            existing().isPublished == true &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['likes', 'dislikes']) &&
+            incoming().likes >= existing().likes - 1 && incoming().likes <= existing().likes + 1 &&
+            incoming().dislikes >= existing().dislikes - 1 && incoming().dislikes <= existing().dislikes + 1
+          )
+        );
+
+      allow delete: if isValidId(appId) && isAdmin();
+
+      // Subcollection: Single vote per verified user (Master Gate checks parent published app)
+      match /votes/{userId} {
+        allow get: if isValidId(appId) && isValidId(userId) && (isOwner(userId) || isAdmin());
+        allow list: if isValidId(appId) && isVerified() && (existing().userId == request.auth.uid || isBootstrappedAdmin());
+
+        allow create: if isValidId(appId) &&
+          isValidId(userId) &&
+          isOwner(userId) &&
+          isValidAppVote(incoming(), appId, userId) &&
+          incoming().createdAt == request.time &&
+          incoming().updatedAt == request.time &&
+          exists(/databases/$(database)/documents/apps/$(appId)) &&
+          get(/databases/$(database)/documents/apps/$(appId)).data.isPublished == true;
+
+        allow update: if isValidId(appId) &&
+          isValidId(userId) &&
+          isOwner(userId) &&
+          isValidAppVote(incoming(), appId, userId) &&
+          incoming().createdAt == existing().createdAt &&
+          incoming().updatedAt == request.time &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['voteType', 'updatedAt']) &&
+          exists(/databases/$(database)/documents/apps/$(appId)) &&
+          get(/databases/$(database)/documents/apps/$(appId)).data.isPublished == true;
+
+        allow delete: if isValidId(appId) && isValidId(userId) && (isOwner(userId) || isAdmin());
+      }
+    }
+
+    // User-submitted APK Applications (Quarantined until Admin Approval)
+    match /submissions/{submissionId} {
+      allow get: if isValidId(submissionId) && (isAdmin() || (resource != null && isVerified() && resource.data.userId == request.auth.uid));
+      allow list: if isBootstrappedAdmin() || (isVerified() && resource.data.userId == request.auth.uid);
+
+      allow create: if isValidId(submissionId) &&
+        isVerified() &&
+        isValidAppSubmission(incoming(), submissionId) &&
+        incoming().userId == request.auth.uid &&
+        incoming().status == 'pending' &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+
+      allow update: if isValidId(submissionId) &&
+        isAdmin() &&
+        isValidAppSubmission(incoming(), submissionId) &&
+        incoming().id == existing().id &&
+        incoming().userId == existing().userId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time;
+
+      allow delete: if isValidId(submissionId) && isAdmin();
+    }
+
+    // Isolated User Profiles, KS Wallet, Transactions, and Verified Download Rewards
+    match /users/{userId} {
+      allow get: if isValidId(userId) && (isOwner(userId) || isAdmin());
+      allow list: if isBootstrappedAdmin();
+
+      allow create: if isValidId(userId) &&
+        isOwner(userId) &&
+        isValidUserProfile(incoming(), userId) &&
+        incoming().kcBalance == 120 &&
+        incoming().studioPlan == 'normal' &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+
+      allow update: if isValidId(userId) &&
+        isValidUserProfile(incoming(), userId) &&
+        incoming().userId == existing().userId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time && (
+          isAdmin() ||
+          // Action 1: Toggle favorites only
+          (
+            isOwner(userId) &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['favorites', 'updatedAt'])
+          ) ||
+          // Action 2: Claim silent +100 KS once for a newly created verified downloadReward receipt
+          (
+            isOwner(userId) &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['kcBalance', 'lastRewardedAppId', 'updatedAt']) &&
+            isValidId(incoming().lastRewardedAppId) &&
+            incoming().kcBalance == existing().kcBalance + 100 &&
+            !exists(/databases/$(database)/documents/users/$(userId)/downloadRewards/$(incoming().lastRewardedAppId)) &&
+            existsAfter(/databases/$(database)/documents/users/$(userId)/downloadRewards/$(incoming().lastRewardedAppId))
+          ) ||
+          // Action 3: Server-aligned PLUS upgrade (5000 KC deduction)
+          (
+            isOwner(userId) &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['kcBalance', 'studioPlan', 'plusExpiry', 'updatedAt']) &&
+            existing().kcBalance >= 5000 &&
+            incoming().kcBalance == existing().kcBalance - 5000 &&
+            incoming().studioPlan == 'plus'
+          )
+        );
+
+      allow delete: if isValidId(userId) && isAdmin();
+
+      // Subcollection: Immutable KS/KC Transactions (Master Gate checks parent user doc)
+      match /transactions/{txId} {
+        allow get: if isValidId(userId) && isValidId(txId) && (isOwner(userId) || isAdmin());
+        allow list: if isValidId(userId) && isVerified() && (existing().userId == request.auth.uid || isBootstrappedAdmin());
+
+        allow create: if isValidId(userId) &&
+          isValidId(txId) &&
+          isOwner(userId) &&
+          isValidUserTransaction(incoming(), userId, txId) &&
+          exists(/databases/$(database)/documents/users/$(userId));
+
+        allow update, delete: if false;
+      }
+
+      // Subcollection: Deterministic 1-time 100 KS Download Reward Receipts
+      match /downloadRewards/{appId} {
+        allow get: if isValidId(userId) && isValidId(appId) && (isOwner(userId) || isAdmin());
+        allow list: if isValidId(userId) && isVerified() && (existing().userId == request.auth.uid || isBootstrappedAdmin());
+
+        allow create: if isValidId(userId) &&
+          isValidId(appId) &&
+          isOwner(userId) &&
+          isValidDownloadReward(incoming(), userId, appId) &&
+          exists(/databases/$(database)/documents/users/$(userId)) &&
+          exists(/databases/$(database)/documents/apps/$(appId)) &&
+          get(/databases/$(database)/documents/apps/$(appId)).data.isPublished == true &&
+          getAfter(/databases/$(database)/documents/users/$(userId)).data.kcBalance ==
+            get(/databases/$(database)/documents/users/$(userId)).data.kcBalance + 100;
+
+        allow update, delete: if false;
+      }
+    }
+  }
+}

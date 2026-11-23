@@ -1,0 +1,576 @@
+{
+  "entities": {
+    "StoreApp": {
+      "title": "StoreApp",
+      "description": "Published or draft application entry in KENİX STORE.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "type": {
+          "type": "string",
+          "enum": ["app", "game"]
+        },
+        "category": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "developer": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "isOfficialKenix": {
+          "type": "boolean"
+        },
+        "shortDescription": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 300
+        },
+        "fullDescription": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 4000
+        },
+        "icon": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        "logoUrl": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 350000
+        },
+        "banner": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 450000
+        },
+        "tags": {
+          "type": "array"
+        },
+        "likes": {
+          "type": "integer"
+        },
+        "dislikes": {
+          "type": "integer"
+        },
+        "downloads": {
+          "type": "integer"
+        },
+        "opens": {
+          "type": "integer"
+        },
+        "rating": {
+          "type": "number"
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40
+        },
+        "appUrl": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 2000,
+          "pattern": "^https?://.+"
+        },
+        "launchMode": {
+          "type": "string",
+          "enum": ["link", "download"]
+        },
+        "isPublished": {
+          "type": "boolean"
+        },
+        "updateNotes": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 1000
+        },
+        "packageName": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 160
+        },
+        "apkId": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 128
+        },
+        "apkUrl": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 2000
+        },
+        "apkFileName": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 200
+        },
+        "fileSizeBytes": {
+          "type": "integer"
+        },
+        "apkSha256": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 64
+        },
+        "apkVerified": {
+          "type": "boolean"
+        },
+        "apkScanSummary": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 500
+        },
+        "submittedBy": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 128
+        },
+        "submissionId": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 128
+        },
+        "publishedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "type",
+        "category",
+        "developer",
+        "isOfficialKenix",
+        "shortDescription",
+        "fullDescription",
+        "icon",
+        "banner",
+        "tags",
+        "likes",
+        "dislikes",
+        "downloads",
+        "opens",
+        "rating",
+        "version",
+        "appUrl",
+        "launchMode",
+        "isPublished",
+        "publishedAt",
+        "updatedAt"
+      ]
+    },
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Isolated store user wallet (KS/KC), studio plan, favorites, and verified download reward state.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "username": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "kcBalance": {
+          "type": "integer"
+        },
+        "studioPlan": {
+          "type": "string",
+          "enum": ["normal", "plus"]
+        },
+        "plusExpiry": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 64
+        },
+        "favorites": {
+          "type": "array"
+        },
+        "lastRewardedAppId": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]*$"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "userId",
+        "username",
+        "kcBalance",
+        "studioPlan",
+        "favorites",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "UserTransaction": {
+      "title": "UserTransaction",
+      "description": "Immutable KS/KC wallet ledger transaction for a verified user.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "userId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "amount": {
+          "type": "integer"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "daily",
+            "publish",
+            "studio_entry",
+            "membership",
+            "sponsor_reward",
+            "sponsor_revoke",
+            "download_reward"
+          ]
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240
+        },
+        "balanceAfter": {
+          "type": "integer"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "amount",
+        "type",
+        "description",
+        "balanceAfter",
+        "createdAt"
+      ]
+    },
+    "DownloadReward": {
+      "title": "DownloadReward",
+      "description": "Single-award immutable receipt preventing duplicate 100 KS download rewards for the same app.",
+      "type": "object",
+      "properties": {
+        "appId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "userId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "rewardAmount": {
+          "type": "integer"
+        },
+        "verified": {
+          "type": "boolean"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["appId", "userId", "rewardAmount", "verified", "createdAt"]
+    },
+    "AppVote": {
+      "title": "AppVote",
+      "description": "Single vote per verified user on a published store application.",
+      "type": "object",
+      "properties": {
+        "appId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "userId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "voteType": {
+          "type": "string",
+          "enum": ["like", "dislike"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["appId", "userId", "voteType", "createdAt", "updatedAt"]
+    },
+    "AdminRecord": {
+      "title": "AdminRecord",
+      "description": "Trusted CEO / Admin UID allowlist document.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "role": {
+          "type": "string",
+          "enum": ["ceo", "admin"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["uid", "role", "createdAt"]
+    },
+    "AppSubmission": {
+      "title": "AppSubmission",
+      "description": "Developer APK submission awaiting or reviewed by store administrators.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "userId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "userEmail": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 160
+        },
+        "developer": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "packageName": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 160,
+          "pattern": "^[a-zA-Z][a-zA-Z0-9_]*(\\.[a-zA-Z0-9_]+)+$"
+        },
+        "category": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40
+        },
+        "shortDescription": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300
+        },
+        "fullDescription": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000
+        },
+        "updateNotes": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 1000
+        },
+        "icon": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        "logoUrl": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 350000
+        },
+        "banner": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 450000
+        },
+        "apkId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "apkUrl": {
+          "type": "string",
+          "minLength": 5,
+          "maxLength": 2000
+        },
+        "apkFileName": {
+          "type": "string",
+          "minLength": 5,
+          "maxLength": 200
+        },
+        "fileSizeBytes": {
+          "type": "integer"
+        },
+        "apkSha256": {
+          "type": "string",
+          "minLength": 64,
+          "maxLength": 64,
+          "pattern": "^[a-fA-F0-9]{64}$"
+        },
+        "apkScanPassed": {
+          "type": "boolean"
+        },
+        "apkScanSummary": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "status": {
+          "type": "string",
+          "enum": ["pending", "approved", "rejected"]
+        },
+        "reviewNotes": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 500
+        },
+        "reviewedBy": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 160
+        },
+        "reviewedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "publishedAppId": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 128
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "userEmail",
+        "developer",
+        "title",
+        "packageName",
+        "category",
+        "version",
+        "shortDescription",
+        "fullDescription",
+        "icon",
+        "banner",
+        "apkId",
+        "apkUrl",
+        "apkFileName",
+        "fileSizeBytes",
+        "apkSha256",
+        "apkScanPassed",
+        "apkScanSummary",
+        "status",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/apps/{appId}": {
+      "schema": { "$ref": "#/entities/StoreApp" },
+      "description": "Published and draft store applications managed by CEO/admins."
+    },
+    "/apps/{appId}/votes/{userId}": {
+      "schema": { "$ref": "#/entities/AppVote" },
+      "description": "One-vote-per-user records scoped beneath each published application."
+    },
+    "/submissions/{submissionId}": {
+      "schema": { "$ref": "#/entities/AppSubmission" },
+      "description": "User-submitted APK packages pending or reviewed by admins."
+    },
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Private user KS wallet balance, studio plan, and favorites."
+    },
+    "/users/{userId}/transactions/{txId}": {
+      "schema": { "$ref": "#/entities/UserTransaction" },
+      "description": "Immutable KS/KC transaction history for a user."
+    },
+    "/users/{userId}/downloadRewards/{appId}": {
+      "schema": { "$ref": "#/entities/DownloadReward" },
+      "description": "Deterministic single-claim download reward receipt per user per app."
+    },
+    "/admins/{adminUid}": {
+      "schema": { "$ref": "#/entities/AdminRecord" },
+      "description": "Trusted admin role documents."
+    }
+  }
+}

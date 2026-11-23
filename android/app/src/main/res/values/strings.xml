@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">KENİX STORE</string>
+    <string name="title_activity_main">KENİX STORE</string>
+    <string name="package_name">com.kenix.store</string>
+    <string name="custom_url_scheme">com.kenix.store</string>
+</resources>

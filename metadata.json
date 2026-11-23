@@ -1,0 +1,8 @@
+{
+  "name": "Kenix Store",
+  "description": "A professional hub for discovering games, managing KC currency, and publishing projects within the Kenix ecosystem.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

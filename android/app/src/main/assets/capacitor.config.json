@@ -1,0 +1,22 @@
+{
+	"appId": "com.kenix.store",
+	"appName": "KENİX STORE",
+	"webDir": "dist",
+	"server": {
+		"androidScheme": "https",
+		"cleartext": false
+	},
+	"android": {
+		"backgroundColor": "#03081c",
+		"allowMixedContent": false
+	},
+	"plugins": {
+		"SplashScreen": {
+			"launchShowDuration": 1500,
+			"launchAutoHide": true,
+			"backgroundColor": "#03081c",
+			"androidScaleType": "CENTER_CROP",
+			"showSpinner": false
+		}
+	}
+}
